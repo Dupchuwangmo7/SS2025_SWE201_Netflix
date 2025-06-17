@@ -18,6 +18,8 @@ interface HomeScreenProps {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [showVideo, setShowVideo] = useState(false);
+  const [videoHtml, setVideoHtml] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const featuredContent = {
     title: 'Drawing Closer',
@@ -60,7 +62,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     </TouchableOpacity>
   );
 
-  const muxPlayerHtml = `
+  const drawingCloserHtml = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -80,6 +82,66 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     </html>
   `;
 
+  const queenOfTearsHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <script src="https://cdn.jsdelivr.net/npm/@mux/mux-player"></script>
+      <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #000; }
+        mux-player { width: 100%; height: 100%; }
+      </style>
+    </head>
+    <body>
+      <mux-player
+        playback-id="ecg76hrif7dF02eagGyERQ3a4PJeUqAqLMDcQkSuZUdI"
+        metadata-viewer-user-id="Placeholder (optional)"
+        metadata-video-title="Queen of Tears"
+      ></mux-player>
+    </body>
+    </html>
+  `;
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handlePlayQueenOfTears = () => {
+    setVideoHtml(queenOfTearsHtml);
+    setShowVideo(true);
+  };
+
+  const handlePlayDrawingCloser = () => {
+    setVideoHtml(drawingCloserHtml);
+    setShowVideo(true);
+  };
+
+  // Improved search logic to match partial queries
+  const searchResults = searchQuery.trim().length > 0
+    ? [
+        {
+          id: 'queen-of-tears-ep1',
+          title: 'Queen of Tears Episode 1',
+          image: 'https://images.ctfassets.net/4cd45et68cgf/Rb6wz7UfbWMR26SsqxxJL/82ba4eb884c1b2ca426a2b250d8afa86/ENUS_QueenofTears-Hae-In_CharacterKA_Vertical_RGB_PRE.jpg_ENUS_QueenofTears-Hae-In_CharacterKA_Vertical_RGB_PRE.jpg?w=1200',
+        },
+      ].filter(item =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        searchQuery.toLowerCase().includes('queen') ||
+        searchQuery.toLowerCase().includes('tears') ||
+        searchQuery.toLowerCase().includes('ep 1')
+      )
+    : [];
+
+  const renderSearchResult = ({ item }: { item: { id: string; title: string; image: string } }) => (
+    <TouchableOpacity style={styles.searchResultItem} onPress={handlePlayQueenOfTears}>
+      <ImageBackground source={{ uri: item.image }} style={styles.searchResultImage}>
+        <View style={styles.searchResultOverlay}>
+          <Text style={styles.searchResultTitle}>{item.title}</Text>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -92,13 +154,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           placeholder="Search"
           placeholderTextColor="#888"
           style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={handleSearch}
         />
       </View>
 
       {showVideo ? (
         <View style={styles.videoContainer}>
           <WebView
-            source={{ html: muxPlayerHtml }}
+            source={{ html: videoHtml }}
             style={styles.webView}
             allowsFullscreenVideo
             javaScriptEnabled
@@ -113,10 +177,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       ) : (
         <ScrollView>
+          {searchQuery.trim().length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Search Results</Text>
+              {searchResults.length > 0 ? (
+                <FlatList
+                  data={searchResults}
+                  renderItem={renderSearchResult}
+                  keyExtractor={(item) => item.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.mediaList}
+                />
+              ) : (
+                <Text style={styles.noResultsText}>No results found for "{searchQuery}"</Text>
+              )}
+            </View>
+          )}
           <ImageBackground source={{ uri: featuredContent.image }} style={styles.featuredImage}>
             <View style={styles.featuredOverlay}>
               <Text style={styles.featuredTitle}>{featuredContent.title}</Text>
-              <TouchableOpacity style={styles.playButton} onPress={() => setShowVideo(true)}>
+              <TouchableOpacity style={styles.playButton} onPress={handlePlayDrawingCloser}>
                 <Text style={styles.playButtonText}>Play</Text>
               </TouchableOpacity>
             </View>
@@ -261,5 +342,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     padding: 4,
     textAlign: 'center',
+  },
+  searchResultItem: {
+    marginRight: 8,
+  },
+  searchResultImage: {
+    width: 120,
+    height: 180,
+    justifyContent: 'flex-end',
+  },
+  searchResultOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 8,
+  },
+  searchResultTitle: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    paddingVertical: 8,
   },
 });
