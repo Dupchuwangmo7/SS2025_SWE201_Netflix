@@ -1,13 +1,27 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageBackground, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ImageBackground, TouchableOpacity, FlatList, TextInput } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Button } from '@rneui/themed';
+import WebView from 'react-native-webview';
+import type { StackNavigationProp } from '@react-navigation/stack';
 
-export default function HomeScreen({ navigation }) {
+type RootStackParamList = {
+  Home: undefined;
+  Auth: undefined;
+};
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+
+interface HomeScreenProps {
+  navigation: HomeScreenNavigationProp;
+}
+
+export default function HomeScreen({ navigation }: HomeScreenProps) {
+  const [showVideo, setShowVideo] = useState(false);
+
   const featuredContent = {
-    title: 'Featured Movie',
-    description: 'An epic adventure awaits you in this thrilling blockbuster!',
-    image: 'https://m.media-amazon.com/images/M/MV5BZjljNjI3NzMtYjYwNi00YmE5LWI0OWQtZTkzNGEwY2RmODcyXkEyXkFqcGc@._V1_.jpg',
+    title: 'Drawing Closer',
+    image: 'https://m.media-amazon.com/images/M/MV5BMjJiNzNlMDQtMjhmZS00NjU1LTgwMDMtMmJhNTRhYjEwMmQ3XkEyXkFqcGc@._V1_QL75_UX327_.jpg',
   };
 
   const movieList = [
@@ -38,7 +52,7 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  const renderMediaItem = ({ item }) => (
+  const renderMediaItem = ({ item }: { item: { id: string; image: string } }) => (
     <TouchableOpacity style={styles.mediaItem}>
       <ImageBackground source={{ uri: item.image }} style={styles.mediaImage}>
         {/* You can optionally add a title overlay here */}
@@ -46,45 +60,91 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  const muxPlayerHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <script src="https://cdn.jsdelivr.net/npm/@mux/mux-player"></script>
+      <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #000; }
+        mux-player { width: 100%; height: 100%; }
+      </style>
+    </head>
+    <body>
+      <mux-player
+        playback-id="P00FF6pv2AK00bn9c6LrbG4SAhvj5LcdXs38onGEuZL100"
+        metadata-viewer-user-id="Placeholder (optional)"
+        metadata-video-title="Drawing Closer"
+      ></mux-player>
+    </body>
+    </html>
+  `;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.logo}>Netflix</Text>
-        <Button title="Sign Out" onPress={signOut} buttonStyle={styles.signOutButton} />
+        <Button title="Sign Out" onPress={signOut} buttonStyle={styles.signOutButton} titleStyle={styles.signOutButtonText} />
       </View>
-      <ScrollView>
-        <ImageBackground source={{ uri: featuredContent.image }} style={styles.featuredImage}>
-          <View style={styles.featuredOverlay}>
-            <Text style={styles.featuredTitle}>{featuredContent.title}</Text>
-            <Text style={styles.featuredDescription}>{featuredContent.description}</Text>
-            <TouchableOpacity style={styles.playButton}>
-              <Text style={styles.playButtonText}>Play</Text>
-            </TouchableOpacity>
+
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search"
+          placeholderTextColor="#888"
+          style={styles.searchInput}
+        />
+      </View>
+
+      {showVideo ? (
+        <View style={styles.videoContainer}>
+          <WebView
+            source={{ html: muxPlayerHtml }}
+            style={styles.webView}
+            allowsFullscreenVideo
+            javaScriptEnabled
+            domStorageEnabled
+          />
+          <Button
+            title="Close"
+            onPress={() => setShowVideo(false)}
+            buttonStyle={styles.closeButton}
+            titleStyle={styles.closeButtonText}
+          />
+        </View>
+      ) : (
+        <ScrollView>
+          <ImageBackground source={{ uri: featuredContent.image }} style={styles.featuredImage}>
+            <View style={styles.featuredOverlay}>
+              <Text style={styles.featuredTitle}>{featuredContent.title}</Text>
+              <TouchableOpacity style={styles.playButton} onPress={() => setShowVideo(true)}>
+                <Text style={styles.playButtonText}>Play</Text>
+              </TouchableOpacity>
+            </View>
+          </ImageBackground>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Movies</Text>
+            <FlatList
+              data={movieList}
+              renderItem={renderMediaItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mediaList}
+            />
           </View>
-        </ImageBackground>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Movies</Text>
-          <FlatList
-            data={movieList}
-            renderItem={renderMediaItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.mediaList}
-          />
-        </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Series</Text>
-          <FlatList
-            data={seriesList}
-            renderItem={renderMediaItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.mediaList}
-          />
-        </View>
-      </ScrollView>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Series</Text>
+            <FlatList
+              data={seriesList}
+              renderItem={renderMediaItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mediaList}
+            />
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -99,7 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 40, // pushed the top bar down
+    paddingTop: 40,
     backgroundColor: '#000',
   },
   logo: {
@@ -110,8 +170,45 @@ const styles = StyleSheet.create({
   signOutButton: {
     backgroundColor: '#E50914',
     borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  signOutButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    backgroundColor: '#141414',
+  },
+  searchInput: {
+    backgroundColor: '#222',
+    color: '#fff',
+    borderRadius: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  videoContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  webView: {
+    flex: 1,
+  },
+  closeButton: {
+    backgroundColor: '#E50914',
+    borderRadius: 5,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    margin: 16,
+    alignSelf: 'center',
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   featuredImage: {
     height: 300,
@@ -125,11 +222,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  featuredDescription: {
-    fontSize: 16,
-    color: '#fff',
-    marginVertical: 8,
   },
   playButton: {
     backgroundColor: '#E50914',
