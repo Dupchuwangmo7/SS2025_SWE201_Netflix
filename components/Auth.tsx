@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Alert, StyleSheet, View } from 'react-native'
+import { Alert, StyleSheet, View, Text, ScrollView } from 'react-native'
 import { supabase } from '../lib/supabase'
-import { Button, Input } from '@rneui/themed'
+import { Input, Button } from '@rneui/themed'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
@@ -10,11 +10,7 @@ export default function Auth() {
 
   async function signInWithEmail() {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) Alert.alert(error.message)
     setLoading(false)
   }
@@ -24,60 +20,85 @@ export default function Auth() {
     const {
       data: { session },
       error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    })
-
+    } = await supabase.auth.signUp({ email, password })
     if (error) Alert.alert(error.message)
     if (!session) Alert.alert('Please check your inbox for email verification!')
     setLoading(false)
   }
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input
-          label="Email"
-          leftIcon={{ type: 'font-awesome', name: 'envelope' }}
-          onChangeText={(text) => setEmail(text)}
-          value={email}
-          placeholder="email@address.com"
-          autoCapitalize={'none'}
-        />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Input
-          label="Password"
-          leftIcon={{ type: 'font-awesome', name: 'lock' }}
-          onChangeText={(text) => setPassword(text)}
-          value={password}
-          secureTextEntry={true}
-          placeholder="Password"
-          autoCapitalize={'none'}
-        />
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button title="Sign in" disabled={loading} onPress={() => signInWithEmail()} />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button title="Sign up" disabled={loading} onPress={() => signUpWithEmail()} />
-      </View>
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Welcome to Netflix</Text>
+
+      <Input
+        label="Email"
+        labelStyle={styles.label}
+        inputStyle={styles.input}
+        leftIcon={{ type: 'font-awesome', name: 'envelope', color: 'white' }}
+        placeholder="email@address.com"
+        placeholderTextColor="#999"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+      />
+
+      <Input
+        label="Password"
+        labelStyle={styles.label}
+        inputStyle={styles.input}
+        leftIcon={{ type: 'font-awesome', name: 'lock', color: 'white' }}
+        placeholder="Password"
+        placeholderTextColor="#999"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoCapitalize="none"
+      />
+
+      <Button
+        title="Sign in"
+        disabled={loading}
+        onPress={signInWithEmail}
+        buttonStyle={styles.button}
+        containerStyle={styles.buttonContainer}
+      />
+      <Button
+        title="Sign up"
+        disabled={loading}
+        onPress={signUpWithEmail}
+        buttonStyle={styles.button}
+        containerStyle={styles.buttonContainer}
+      />
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
-    padding: 12,
+    flexGrow: 1,
+    backgroundColor: '#000',
+    padding: 24,
+    justifyContent: 'center',
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
+  title: {
+    fontSize: 28,
+    color: 'red',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 40,
+    marginTop: 60, 
   },
-  mt20: {
-    marginTop: 20,
+  label: {
+    color: 'white',
+  },
+  input: {
+    color: 'white',
+  },
+  button: {
+    backgroundColor: 'red',
+    borderRadius: 6,
+  },
+  buttonContainer: {
+    marginVertical: 10,
   },
 })
